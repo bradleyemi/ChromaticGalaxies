@@ -1,4 +1,94 @@
-#Sextractor catalogs for HST Data
+'''
+Script Name: HST_sextractor.py
+Author: Bradley Emi
+Date: July 2015
+
+v. 1.0 (7/20/2015) script does edge removal, star-diffraction spikes through run_pipeline. Manual masking and in-image overlap
+has to be done separately.
+
+########### Description ##########
+
+This script takes a file, and uses the hot-cold method described in Leauthaud (2007) to select
+galaxies and stars from the COSMOS sample using the SExtractor software. The catalogs are set to output the
+parameters in output_params. It then cleans the catalogs for:
+
+-Edge removal
+-Star diffraction spikes
+-Manual removal of image defects
+-In-image overlap
+
+The parameters for star-galaxy classification can be adjusted, and checked using make_classifier_plot.
+The automatic star diffraction masking has been tested on COSMOS f606w and f814w filters, and assumes
+that the size of each diffraction spike scales with flux. These parameters can also be adjusted, but the 
+automatic parameters are included. 
+
+Finally, statistics of how many objects are extracted and cleaned at each step are output into a text file.
+
+Example code to run the cleaning pipeline on COSMOS data is at the bottom of this file.
+
+########## Usage ##########
+
+NOTE:
+*You can skip steps 1 and 2 if you are using the default parameters.
+
+If you have an image file <image> with a background weight map <background>:
+
+Step 1*: Get some basic sextractor catalog that reasonably detects most of the objects (parameters don't really matter
+at this step, this is just to check the star-galaxy classifier). i.e., do:
+
+run_sextractor(file,weight_file,bright_config_dict,output_params,out_name)
+
+Step 2*: Check that the S/G classifier is making a reasonable separation of the star and galaxy regions on the mu/mag plot.
+Adjust new parameters as necessary. The six parameters are:
+
+flat_x_division- stars less than this magnitude are assumed to be saturated.
+flat_y_division- for these saturated stars, objects above this mu will be assumed to be galaxies, below will be stars.
+dividing_x1, dividing_y1 and dividing_x2, dividing_y2: coordinates of two points of the separating line (for non-saturated stars).
+All objects above this line will be galaxies, all below will be stars.
+
+On the sextractor catalog you just ran, do:
+
+make_classifier_plot(merged_catalog, flat_x_division=19.0, flat_y_division=-9.8, dividing_x1=19.0, dividing_y1 = -9.8, dividing_x2 = 21.0, dividing_y2 = -8.0)
+
+(replace the default values with your own if you are adjusting them). Once you are done adjusting, make_classifier_plot
+will print the slope and intercept of the line. Make a new tuple with flat_x and flat_y cutoffs, and the slope/intercept:
+
+customSGParams = (flat_x, flat_y, slope, intercept)
+
+Step 3: Simply run the pipeline. 
+
+run_pipeline(image,background,final_out_name,SG_params=<customSGParams> or <None>,diff_spike_params=<f606w_spike_params> or <f814w_spike_params>)
+
+Step 4: (for now, will be integrated into the pipeline later)
+
+Use manual mask cleanup functions below to do manual masking. You will need to make a text file with image files, x-coordinates of the mask, and the y-coordinates of the mask, in this format:
+
+---
+# EGS_10134_17_acs_wfc_f606w_30mas_unrot_drz.fits.cat
+1968 1954 2631 2662
+1704 2306 2337 1715
+# EGS_10134_1d_acs_wfc_f606w_30mas_unrot_drz.fits.cat
+4678 4608 3999 4039
+5325 5999 5949 5257
+# EGS_10134_1e_acs_wfc_f606w_30mas_unrot_drz.fits.cat
+3875 3832 4464 4524
+5833 6570 6642 5893
+etc...
+---
+
+Then you run:
+
+manual_mask_catalogs(catalog_vertex_file) where the text file above is the catalog_vertex_file.
+
+Step 5: (for now, will be integrated into the pipeline later)
+
+Run overlap cleanup on individual files and remove null lines.
+
+delete_overlap(catalog)
+delete_null(catalog)
+
+Now you have a set of cleaned catalogs. 
+'''
 
 import asciidata
 import subprocess
@@ -8,7 +98,7 @@ import matplotlib.pyplot as plt
 import time
 
 '''
-Steps so far:
+Steps:
 1) Run sextractor for the bright objects
 2) Run sextractor for the faint objects
 3) Make a segmentation map out of the bright star catalog
@@ -21,29 +111,8 @@ Steps so far:
 10) Edge removal
 11) Diffraction spike cleanup
 12) Manual cleanup (after pipeline)
-13) Overlap
+13) Overlap (after pipeline)
 '''
-
-
-f606w_files = []
-f814w_files = []
-f606w_backgrounds = []
-f814w_backgrounds = []
-
-f606w = open("f606w_filenames.txt")
-for line in f606w.readlines():
-    f606w_files.append(line.strip())
-f814w = open("f814w_filenames.txt")
-for line in f814w.readlines():
-    f814w_files.append(line.strip())
-    
-f606wb = open("f606w_backgrounds.txt")
-for line in f606wb.readlines():
-    f606w_backgrounds.append(line.strip())
-
-f814wb = open("f814w_backgrounds.txt")
-for line in f814wb.readlines():
-    f814w_backgrounds.append(line.strip())
    
 ### Statistics
 
@@ -57,12 +126,6 @@ n_manual606 = 0
 n_manual814 = 0
 n_overlap606 = 0
 n_overlap814 = 0
-#Testing files
-
-test_background = "EGS_10134_0a_acs_wfc_f814w_30mas_unrot_wht.fits"
-test_image = "EGS_10134_0a_acs_wfc_f814w_30mas_unrot_drz.fits"
-test_background2 = "EGS_10134_0a_acs_wfc_f606w_30mas_unrot_wht.fits"
-test_image2 = "EGS_10134_0a_acs_wfc_f606w_30mas_unrot_drz.fits"
  
 #Set the output parameters
 
@@ -108,6 +171,10 @@ faint_config_dict = { 'DETECT_MINAREA' : 18 ,
 'BACKPHOTO_TYPE' : "LOCAL" ,
 'BACKPHOTO_THICK' : 200,
 'PIXEL_SCALE' : 0.03}
+
+#Spike parameters are: slope, intercept (of linear model mapping flux to spike length), width of spike, and theta (angle spikes are rotated) in degrees
+f606w_spike_params = (0.0350087,64.0863,40.0,2.614)
+f814w_spike_params = (0.0367020,77.7674,40.0,2.180)
 
 #Runs sextractor on a list of filename strings, config_dict and 
 
@@ -262,7 +329,7 @@ def points_to_line(point1, point2):
     return (slope, intercept)
 
 #Makes the mu_max vs. mag_auto plot
-def make_classifier_plot(merged_catalog):
+def make_classifier_plot(merged_catalog, flat_x_division=19.0, flat_y_division=-9.8, dividing_x1=19.0, dividing_y1 = -9.8, dividing_x2 = 21.0, dividing_y2 = -8.0):
     catalog = asciidata.open(merged_catalog)
     mu = []
     mag = []
@@ -310,8 +377,7 @@ def make_classifier_plot(merged_catalog):
     plt.ylabel("MU_MAX")
     plt.title("Surface brightness vs. apparent magnitude")
     plt.show()
-    print star_detections
-
+    print dividing_line
 
 
 def is_below_boundary(input_x, input_y, flat_x_division, flat_y_division, slope, intercept):
@@ -425,9 +491,6 @@ def inpoly(px,py,x,y):
     return crossings % 2
         
 #Clean the merged catalog
-#Spike parameters are: slope, intercept (of linear model mapping flux to spike length), width of spike, and theta (angle spikes are rotated) in degrees
-f606w_spike_params = (0.0350087,64.0863,40.0,2.614)
-f814w_spike_params = (0.0367020,77.7674,40.0,2.180)
 def diffraction_mask_cleanup(catalog, out_name, mag_cutoff = 19.0, diff_spike_params = f606w_spike_params,clean=False):
     #Get all stars for which we are masking
     #the length of the spike is given by l = m*Flux+b
@@ -689,9 +752,7 @@ def manual_mask_catalogs(catalog_vertex_file):
                 print y_vertices
                 manual_mask(current_catalog, x_vertices, y_vertices)
                 x_vertices = []
-                y_vertices = []
-
-#manual_mask_catalogs("manual_masks.txt")            
+                y_vertices = []           
 
 def run_pipeline(image,background,final_out_name,make_classifier=False,SG_params=None,diff_spike_params=f606w_spike_params,clean=False,debug=True):
     s = time.time()
@@ -769,9 +830,53 @@ def run_pipeline(image,background,final_out_name,make_classifier=False,SG_params
     t = e-s
     print "Process complete. Time:", t, "seconds. File written out to :", final_out_name
 
+############ CODE TO RUN PIPELINE GOES HERE ##########
 
-make_classifier_plot("EGS_10134_0i_acs_wfc_f606w_30mas_unrot_drz.fits.cat")
+
+
+
+
+######################################################
+
+### Change the outname for the statistics file here; statistics will be written out to this file name.
+s = open("statistics_text_file_outname.txt", "w")
+s.write("Items in c1: " + str(n_c1) + "\n")
+s.write("Items in cold: " + str(n_bright) + "\n")
+s.write("Items in hot: " + str(n_faint) + "\n")
+s.write("Items deleted in hot/cold step: " + str(n_hotcold) + "\n")
+s.write("Items in noisy border: " + str(n_border) + "\n")
+s.write("Items in a star diffraction mask: " + str(n_diff) + "\n")
+s.write("Items in a manual mask: " + str(n_manual606))
+s.close()  
+
+### EXAMPLE BELOW ###
 '''
+#Input the files you want to use
+
+f606w_files = []
+f814w_files = []
+f606w_backgrounds = []
+f814w_backgrounds = []
+
+f606w = open("f606w_filenames.txt")
+for line in f606w.readlines():
+    f606w_files.append(line.strip())
+f814w = open("f814w_filenames.txt")
+for line in f814w.readlines():
+    f814w_files.append(line.strip())
+    
+f606wb = open("f606w_backgrounds.txt")
+for line in f606wb.readlines():
+    f606w_backgrounds.append(line.strip())
+
+f814wb = open("f814w_backgrounds.txt")
+for line in f814wb.readlines():
+    f814w_backgrounds.append(line.strip())
+'''
+
+'''
+#pipeline run example
+
 #####F606w pipeline
 print "Running image pipeline on COSMOS files in the f606w filter."
 s = time.time()    
@@ -789,44 +894,11 @@ for i in range(len(f814w_files)):
     e = time.time()
     print "Total time elapsed is approximately", np.floor((e-s)/60), "minutes", ((e-s)/60-np.floor((e-s)/60))*60, "seconds."
 '''
-'''
-def classification_map(catalog, out_name):
-    xdim = 7500
-    ydim = 7500
-    #Get position tuples of the detected objects and round them to the nearest integer
-    positions = []
-    catalog = asciidata.open(catalog)
-    for i in range(catalog.nrows):
-        x_min = catalog['XMIN_IMAGE'][i]
-        y_min = catalog['YMIN_IMAGE'][i]
-        x_max = catalog['XMAX_IMAGE'][i]
-        y_max = catalog['YMAX_IMAGE'][i]
-        is_star = catalog['IS_STAR'][i]
-        snr = catalog['SNR'][i]
-        pos_tuple = (x_min, x_max, y_min, y_max, is_star,snr)
-        positions.append(pos_tuple)
-        
-    classification_array = np.zeros((xdim,ydim))
-    for j in range(len(positions)):
-        x_min = (positions[j])[0]
-        x_max = (positions[j])[1]
-        y_min = (positions[j])[2]
-        y_max = (positions[j])[3]
-        is_star = (positions[j])[4]
-        snr = (positions[j])[5]
-        for x in range(x_min,x_max):
-            for y in range(y_min,y_max):
-                if is_star == 1:
-                    classification_array[y,x] = snr
-                else:
-                    classification_array[y,x] = 0
-    
-    #Write out to a fits file
-	hdu_out = pyfits.PrimaryHDU(classification_array)
-    hdu_out.writeto(out_name + ".fits",clobber=True)
-'''
+
 '''
 for file in f606w_files:
+    delete_null(file + ".cat")
+    delete_overlap(file + ".cat")
     delete_null(file + ".cat")
     
 for file in f814w_files:
@@ -834,20 +906,7 @@ for file in f814w_files:
     delete_overlap(file + ".cat")
     delete_null(file + ".cat")
 '''
-'''
-s = open("statistics_606.txt", "a")
-#s.write("Items in c1: " + str(n_c1) + "\n")
-#s.write("Items in cold: " + str(n_bright) + "\n")
-#s.write("Items in hot: " + str(n_faint) + "\n")
-#s.write("Items deleted in hot/cold step: " + str(n_hotcold) + "\n")
-#s.write("Items in noisy border: " + str(n_border) + "\n")
-#s.write("Items in a star diffraction mask: " + str(n_diff) + "\n")
-s.write("Items in a manual mask: " + str(n_manual606))
-s.close()
 
-s2 = open("statistics.txt", "a")
-s2.write("Items in a manual mask: " + str(n_manual814))
-s2.close()      
-'''    
+
     
     
