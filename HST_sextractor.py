@@ -18,13 +18,25 @@ parameters in output_params. It then cleans the catalogs for:
 -In-image overlap
 
 The parameters for star-galaxy classification can be adjusted, and checked using make_classifier_plot.
-The automatic star diffraction masking has been tested on COSMOS f606w and f814w filters, and assumes
+The automatic star diffraction masking has been tested on AEGIS f606w and f814w filters, and assumes
 that the size of each diffraction spike scales with flux. These parameters can also be adjusted, but the 
 automatic parameters are included. 
 
 Finally, statistics of how many objects are extracted and cleaned at each step are output into a text file.
 
-Example code to run the cleaning pipeline on COSMOS data is at the bottom of this file.
+Example code to run the cleaning pipeline on AEGIS data is at the bottom of this file.
+
+########## Input ##########
+
+image (.fits file)
+background (.fits file)
+
+########## Dependencies ##########
+
+AstroAsciiData
+PyFits/AstroPy
+NumPy
+MatPlotLib.PyPlot
 
 ########## Usage ##########
 
@@ -64,9 +76,9 @@ Step 4: (for now, will be integrated into the pipeline later)
 Use manual mask cleanup functions below to do manual masking. You will need to make a text file with image files, x-coordinates of the mask, and the y-coordinates of the mask, in this format:
 
 ---
-# EGS_10134_17_acs_wfc_f606w_30mas_unrot_drz.fits.cat
-1968 1954 2631 2662
-1704 2306 2337 1715
+# EGS_10134_17_acs_wfc_f606w_30mas_unrot_drz.fits.cat <- catalog filename (# sign is necessary)
+1968 1954 2631 2662 <- x-coordinates of mask
+1704 2306 2337 1715 <- y-coordinates of mask
 # EGS_10134_1d_acs_wfc_f606w_30mas_unrot_drz.fits.cat
 4678 4608 3999 4039
 5325 5999 5949 5257
@@ -87,7 +99,7 @@ Run overlap cleanup on individual files and remove null lines.
 delete_overlap(catalog)
 delete_null(catalog)
 
-Now you have a set of cleaned catalogs. 
+Now you have a set of cleaned catalogs. Statistics are out-written to the file you specify at the bottom of this script.
 '''
 
 import asciidata

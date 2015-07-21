@@ -1,4 +1,65 @@
-#Finds the focus positions of each COSMOS image
+'''
+Script Name: focus_positions.py
+Author: Bradley Emi
+Date: July 2015
+
+v. 1.0 (7/21/2015) script finds the mean focus positions of images given a set of SExtractor catalogs, the corresponding 
+image files, and set of TT starfields (as GalSim images) from -10 to +5 um. It outputs them to a text file.
+
+########### Description ##########
+
+This script determines the mean focus positions of the HST given TinyTim starfields for 16 focus positions from -10 to 5 um. 
+Stars must be checked manually for input. 
+
+########## Input ##########
+
+-list of images (.fits files)
+-list of SExtractor catalogs (.txt files) with the following parameters:
+NUMBER
+X_IMAGE
+Y_IMAGE
+FLUX_RADIUS
+IS_STAR (MU_CLASS following convention in Leauthaud et. al. 2007, this can be modified in the code below. Just need a binary star/galaxy classifier with stars=1 and non-stars=0)
+SNR
+-list of TT GalSim images. Can be imported from fits files as shown below, just change the filenames below. 
+-one text file that gives the centroids of the TT starfields in two columns, x and y. Can be an ascii table, SExtractor catalog, or regular text file.
+
+*Images and catalogs must be in the same order, i.e., image 1 has to correspond to catalog 1
+
+
+########## Dependencies ##########
+
+AstroAsciiData
+PyFits/AstroPy
+NumPy
+MatPlotLib.PyPlot
+GalSim
+SciPy
+Ds9
+
+########## Usage ##########
+
+If you don't have the TT images as galsim images:
+Change the filenames below, the script will automatically convert them to galsim images in the list "tt_galsim_images".
+
+Then run:
+
+focus(catalogs, filenames, tt_galsim_images, tt_star_file, out_name, match_dist = 200., stamp_size = 6., nstars=20)
+
+The script will write out the files to a text file called <out_name>. 
+
+Adjustable parameters:
+match_dist -- approximately 1/2 of the distance between TinyTim stars. The script will print "no star found" if this is too small, if this is the case, make it larger.
+stamp_size -- in Gaussian standard deviations, the size of the postage stamp of each star.
+nstars --- the number of input stars to review
+
+When the script prompts you to accept or reject input stars, open a new terminal window, go to the directory where the script is running and type:
+
+ds9 Star*.fits
+
+to review the input stars. Type y or n to accept or reject stars in order. Once you are done, it will display a histogram of the focus positions, and
+write out the focus positions to a text file. The stars used will be written out to files called <catalog>.stars. 
+'''
 
 import asciidata
 import subprocess
@@ -8,9 +69,6 @@ import matplotlib.pyplot as plt
 import time
 import galsim
 from scipy.optimize import curve_fit
-import random
-import pandas
-
 
 '''
 Steps: 
@@ -19,11 +77,10 @@ Steps:
 3) Pick the best S/N stars in the image
 4) Get the corresponding TinyTim stars
 5) Run pattern match, find focus position
-6) Write focus position into catalog
+6) Write focuses into a text file
 '''
 
-test_image = "EGS_10134_01_acs_wfc_f606w_30mas_unrot_drz.fits"
-test_catalog = "EGS_10134_01_acs_wfc_f606w_30mas_unrot_drz.fits.cat"
+###### Modify the filenames below to get TT fits files into GalSim image format. ######
 
 tt_606 = {-1 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-1.fits",
 -2 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-2.fits",
@@ -63,18 +120,23 @@ tt_814 = {-1 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-1.fits",
 4  : "/Users/bemi/JPL/F814W_TT/TinyTim_f4.fits",
 5  : "/Users/bemi/JPL/F814W_TT/TinyTim_f5.fits"}
 
-'''     
+tt_814_list = []
+for i in range(-10,6):
+    tt_814_list.append(tt_814[i])
+  
 i = 0
 tt_galsim_images = []
-for image in tt_606_list:
+for image in tt_814_list:
     print "importing image", i
     f = pyfits.open(image)
     image_data = f[0].data 
     img = galsim.Image(image_data)
     tt_galsim_images.append(img)
     f.close()
-    i += 1  
-'''
+    i += 1
+    
+###### End .fits to GalSim import ####
+
 output_params = ["X_IMAGE",
 "Y_IMAGE"]
 
@@ -157,7 +219,7 @@ def get_subImages(image_star_table, image, stamp_size = 6.):
     return subImages
 
 #Gets the centroid of a close TT star
-def match_to_tt(image_star_table, tt_star_data_file, dist=300.):
+def match_to_tt(image_star_table, tt_star_data_file, dist=200.):
     centroid_table = asciidata.open(tt_star_data_file)
     star_table = asciidata.open(image_star_table)
     out_table = asciidata.create(6, star_table.nrows)
@@ -220,11 +282,11 @@ def find_focus_position(focus_list, cost_list, plot=True):
         plt.show()
     return -b/(2*a), (1/(2*a**2))*np.sqrt(a**2*sigma_b**2 + b**2*sigma_a**2)   
     
-def getMoments(image_star_table, image, tt_galsim_images, tt_star_file, stamp_size = 6., plot=True):  
+def getMoments(image_star_table, image, tt_galsim_images, tt_star_file, match_dist = 200., stamp_size = 6., plot=True):  
     #One subimage for each star
-    subImages = get_subImages(image_star_table, image)
+    subImages = get_subImages(image_star_table, image, stamp_size = stamp_size)
     #One centroid for each star
-    tt_centroids = match_to_tt(image_star_table, tt_star_file)
+    tt_centroids = match_to_tt(image_star_table, tt_star_file, dist=match_dist)
     #One list of tt_subimages for each star
     tt_subImages = []
     #One moment for each star
@@ -239,19 +301,21 @@ def getMoments(image_star_table, image, tt_galsim_images, tt_star_file, stamp_si
         print "View image", "Star" + str(i) + ".fits"
         accept = ""
         accept = raw_input("Accept? (y/n) -->")
-        print "accept is", accept
         if accept == "y":
+            print "Input accepted."
             try:
                 subImage_moments.append(galsim.hsm.FindAdaptiveMom(im))
                 keep.append(i)
             except:
                 print "Adaptive moment did not converge, skipping..."
+        else:
+            print "Input rejected."
         i += 1
     j = 10
     print "Keeping stars", keep
     for centroid in tt_centroids:
         if j in keep:
-            tt_subImages.append(get_tt_subImages(centroid, tt_galsim_images))
+            tt_subImages.append(get_tt_subImages(centroid, tt_galsim_images, stamp_size = stamp_size))
         j += 1
     #One moment for each tt_subimage
     tt_moment_lists = []
@@ -260,11 +324,37 @@ def getMoments(image_star_table, image, tt_galsim_images, tt_star_file, stamp_si
         for tt_subImage in tt_focus_position:
             tt_moments.append(galsim.hsm.FindAdaptiveMom(tt_subImage))
         tt_moment_lists.append(tt_moments)
-    print len(subImage_moments), len(tt_moment_lists), len(tt_moment_lists[0])
     cost = np.asarray(get_cost(subImage_moments, tt_moment_lists))
     focus, focus_err = find_focus_position(np.asarray(range(-10,6)), cost, plot=plot)
     return focus, focus_err
-    
+
+def focus(catalogs, filenames, tt_galsim_images, tt_star_file, out_name, match_dist = 200., stamp_size = 6., nstars=20, plot=False, generate_new_star_files=True, histogram = True):
+    if generate_new_star_files:
+        n = 0
+        for catalog in catalogs:
+            select_good_stars(catalog, catalog+".stars", nstars=nstars)
+            print "generating star file", n
+            n += 1
+    foci = []
+    err = []
+    for i in range(len(filenames)):
+        focus, focus_err = getMoments(catalogs[i]+".stars", filenames[i], tt_galsim_images, tt_star_file, match_dist=match_dist, stamp_size=stamp_size, plot=plot)
+        print "Focus is", focus, "plus/minus", focus_err
+        out = open(out_name, "a")
+        out.write(filenames[i] + " ")
+        out.write(str(focus) + " ")
+        out.write(str(focus_err) + "\n")
+        out.close()
+        foci.append(focus)
+        err.append(focus_err)
+    if histogram:
+        plt.hist(foci, bins=20)
+        plt.xlabel("focus position (um)")
+        plt.ylabel("frequency")
+        plt.title("Focus positions")
+        plt.show()
+
+'''    
 f = open("f606w_catalogs.txt")   
 f606w_catalogs = []
 for line in f.readlines():
@@ -276,46 +366,28 @@ f606w_files = []
 for line in g.readlines():
     f606w_files.append(line.strip())
 g.close()
-
 '''
-n = 0
-for catalog in f606w_catalogs:
-    select_good_stars(catalog, catalog + ".stars", nstars=20)
-    print "generating star file", n
-    n += 1
 '''
-'''    
-foci = []
-err = []
-n = 0
-for file in f606w_files:
-    print "working on file", n
-    n += 1
-    try:
-        focus, focus_err = getMoments(file + ".cat.stars", file, tt_galsim_images, "TinyTim_f-1.stars.dat", plot=True)
-        print "Focus is", focus, "plus/minus", focus_err 
-        foci.append(focus)
-        err.append(focus_err)
-    except:
-        raise
-        foci.append(None)
-        err.append(None)
-        
+### Example script to run the focus script on f814w AEGIS data ###
 
-plt.hist(foci, bins=20)
-plt.xlabel("focus position (um)")
-plt.ylabel("frequency")
-plt.title("Focus positions of f606w COSMOS images")
-plt.show()       
-    
-out = open("606_focus_positions.txt", "w")
-for i in range(len(foci)):
-    out.write(f606w_files[i] + " ")
-    out.write(str(foci[i]) + " ")
-    out.write(str(err[i]) + "\n")
+f = open("f814w_catalogs.txt")   
+f814w_catalogs = []
+for line in f.readlines():
+    f814w_catalogs.append(line.strip())
+f.close()
+
+g = open("f814w_filenames.txt")
+f814w_files = []
+for line in g.readlines():
+    f814w_files.append(line.strip())
+g.close()
+
+focus(f814w_catalogs, f814w_files, tt_galsim_images, "/Users/bemi/JPL/F814W_TT/TinyTim_f-1.stars.dat", "test_focus.txt", match_dist = 200., stamp_size = 6., nstars=20, plot=False, generate_new_star_files=True, histogram = True)
 '''
+'''
+### Example script to generate a plot of focus position vs. time ###
 
-f = open("606_focus_positions.txt")
+f = open("<focuses>.txt")
 times = []
 focuses = []
 for line in f.readlines():
@@ -325,17 +397,13 @@ for line in f.readlines():
     hdulist = pyfits.open(image)
     time = np.float32(hdulist[0].header['EXPSTART'])
     hdulist.close()
-    if time < 53225:
-       times.append(time)
-       focuses.append(focus)
+    times.append(time)
+    focuses.append(focus)
 f.close()
 
-#print times
-#print focuses
 plt.scatter(times,focuses)
 plt.title("Interpolated focus position of camera vs. time")
 plt.xlabel("Modified Julian Day Number")
 plt.ylabel("Focus Position (um)")
 plt.show()
-    
-    
+'''  
