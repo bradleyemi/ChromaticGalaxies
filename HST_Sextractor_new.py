@@ -42,6 +42,7 @@ MatPlotLib.PyPlot
 ########## Usage ##########
 
 cat = GalaxyCatalog(file, background, filter, manual_mask_file, out_name)
+cat.make_catalog()
 
 '''
 
@@ -65,8 +66,8 @@ Steps:
 9) Add the signal to noise ratio
 10) Edge removal
 11) Diffraction spike cleanup
-12) Manual cleanup (after pipeline)
-13) Overlap (after pipeline)
+12) Overlap
+13) Manual cleanup
 '''
 
 ### Some useful helper functions ###
@@ -375,6 +376,8 @@ class GalaxyCatalog:
         #Manual mask
         if self.catalog_vertex_file != None:
             self.manual_mask_catalogs()
+        
+        subprocess.call(["rm", self.out_name + "_*"])
                 
     def run_sextractor(self, use_dict, out_name, output_params, clean=True):
         param_ascii = asciidata.create(1,len(output_params))
