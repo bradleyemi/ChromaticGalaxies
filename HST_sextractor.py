@@ -55,6 +55,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from cleanutils import *
+from focus_positions import *
 
 '''
 Steps:
@@ -177,7 +178,7 @@ class GalaxyCatalog:
         delete_null(self.out_name + "_diff.cat")
         renumber(self.out_name + "_diff.cat")
         self.diff_catalog = self.out_name + ".cat"
-        self.get_catalog = self.diff_catalog
+        self.catalog = self.diff_catalog
         
         #Manual mask
         if self.catalog_vertex_file != None:
@@ -483,8 +484,27 @@ class GalaxyCatalog:
 					print y_vertices
 					manual_mask(current_catalog, x_vertices, y_vertices)
 					x_vertices = []
-					y_vertices = []    
-					 
+					y_vertices = []
+
+class GalaxyCatalogList:
+    def __init__(self, catalog_list, filter):
+        self.items = catalog_list
+        self.filter = filter
+        self.catalogs = []
+        self.images = []
+        for cat in self.items:
+            self.catalogs.append(cat.catalog)
+            self.images.append(cat.file)
+    
+    def add(self, catalog):
+        self.catalog_list.append(catalog)
+        
+    def add_focus(self, out_name):
+        tt_galsim_images = get_tt_files(self.filter)
+        tt_star_file = get_star_file(self.filter)
+        focus(self.catalogs, self.images, tt_galsim_images, tt_star_file, out_name + ".focus.txt")
+        label_catalogs(self.catalogs, out_name + ".focus.txt")
+             					 
 
 '''
 #Makes the mu_max vs. mag_auto plot
