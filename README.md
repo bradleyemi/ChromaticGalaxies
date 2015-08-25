@@ -2,6 +2,8 @@
 
 This is the code I used to generate a basis set of parametric galaxies from the AEGIS data for ChromaticRealGalaxy in Galsim (https://github.com/GalSim-developers/GalSim) for issue #551 (https://github.com/GalSim-developers/GalSim/issues/551). 
 
+I can be contacted at bemi@stanford.edu to discuss the code or fix issues.
+
 Requirements:
 
 Python 2.7
