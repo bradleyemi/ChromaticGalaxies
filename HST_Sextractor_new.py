@@ -11,6 +11,8 @@ a GalaxyCatalog instance is initiated. (No statistics)
 
 v. 2.1 (8/5/2015) helper functions moved to cleanutils.py and are imported.
 
+v. 2.2 (8/10/2015) focus positions integrated with GalaxyCatalogList object
+
 ########### Description ##########
 
 This script takes a file, and uses the hot-cold method described in Leauthaud (2007) to select
@@ -34,6 +36,21 @@ Finally, statistics of how many objects are extracted and cleaned at each step a
 image (.fits file)
 background (.fits file)
 
+Optional manual masking file. You will need to make a text file with image files, x-coordinates of the mask, and the y-coordinates of the mask, in this format:
+
+---
+# EGS_10134_17_acs_wfc_f606w_30mas_unrot_drz.fits.cat <- catalog filename (# sign is necessary)
+1968 1954 2631 2662 <- x-coordinates of mask
+1704 2306 2337 1715 <- y-coordinates of mask
+# EGS_10134_1d_acs_wfc_f606w_30mas_unrot_drz.fits.cat
+4678 4608 3999 4039
+5325 5999 5949 5257
+# EGS_10134_1e_acs_wfc_f606w_30mas_unrot_drz.fits.cat
+3875 3832 4464 4524
+5833 6570 6642 5893
+etc...
+---
+
 ########## Dependencies ##########
 
 AstroAsciiData
@@ -43,8 +60,20 @@ MatPlotLib.PyPlot
 
 ########## Usage ##########
 
+-Single file:
+
 cat = GalaxyCatalog(file, background, filter, manual_mask_file, out_name)
 cat.make_catalog()
+
+-For a list of files and backgrounds:
+
+catalogs = []
+for i in range(len(files)):
+    cat = GalaxyCatalog(file[i], background[i], filter, manual_mask_file, out_name)
+    catalogs.append(cat)
+
+cat_list = GalaxyCatalogList(catalogs, filter)
+cat_list.add_focus(out_name_for_text_file)
 
 '''
 
@@ -123,7 +152,7 @@ class GalaxyCatalog:
     f606w_spike_params = (0.0350087,64.0863,40.0,2.614)
     f814w_spike_params = (0.0367020,77.7674,40.0,2.180)
     
-    def __init__(self, file, weight_file, filter, out_name, manual_mask_file=None):  
+    def __init__(self, file, weight_file, filter, out_name, manual_mask_file=None, catalog=None):  
         #Initial setup of attributes
         self.file = file
         self.weight_file = weight_file
@@ -134,16 +163,18 @@ class GalaxyCatalog:
         if self.filter == 814:
             self.spike_params = self.f814w_spike_params
         self.out_name = out_name
+        if catalog is not None:
+            self.catalog = catalog
         self.catalog_vertex_file = manual_mask_file
         
     def generate_catalog(self):
         #Runs sextractor for the bright catalog
-        print self.output_params
         self.__run_sextractor(self.bright_config_dict, self.out_name + "_bright", self.output_params)
         self.bright_catalog = self.out_name + "_bright.cat"
         #Stores "bright.cat" as the bright catalog
         
         #Makes the segmentation map
+        print self.file
         self.__make_segmentation_map(self.out_name)
         self.seg_map = self.out_name + "_seg_map.fits"
         
@@ -173,10 +204,10 @@ class GalaxyCatalog:
         self.edge_catalog = self.out_name + "_edge.cat"
         
         #Clean star diffraction spikes/clean for overlap
-        self.diffraction_mask_cleanup(self.out_name + "_diff.cat", self.spike_params)
-        delete_overlap(self.out_name + "_diff.cat")
-        delete_null(self.out_name + "_diff.cat")
-        renumber(self.out_name + "_diff.cat")
+        self.diffraction_mask_cleanup(self.out_name + ".cat", self.spike_params)
+        delete_overlap(self.out_name + ".cat")
+        delete_null(self.out_name + ".cat")
+        renumber(self.out_name + ".cat")
         self.diff_catalog = self.out_name + ".cat"
         self.catalog = self.diff_catalog
         
@@ -184,7 +215,7 @@ class GalaxyCatalog:
         if self.catalog_vertex_file != None:
             self.manual_mask_catalogs()
         
-        subprocess.call(["rm", self.out_name + "_*"])
+        subprocess.call(["rm", "-rf", self.out_name + "_*"])
                 
     def run_sextractor(self, use_dict, out_name, output_params, clean=True):
         param_ascii = asciidata.create(1,len(output_params))
@@ -497,13 +528,13 @@ class GalaxyCatalogList:
             self.images.append(cat.file)
     
     def add(self, catalog):
-        self.catalog_list.append(catalog)
+        self.catalogs.append(catalog)
         
-    def add_focus(self, out_name):
-        tt_galsim_images = get_tt_files(self.filter)
-        tt_star_file = get_star_file(self.filter)
-        focus(self.catalogs, self.images, tt_galsim_images, tt_star_file, out_name + ".focus.txt")
-        label_catalogs(self.catalogs, out_name + ".focus.txt")
+    def add_focus(self, out_name, root):
+        tt_galsim_images = get_tt_files(self.filter, root)
+        tt_star_file = get_star_file(self.filter, root)
+        focus(self.catalogs, self.images, tt_galsim_images, tt_star_file, out_name)
+        label_catalogs(out_name, self.catalogs)
              					 
 
 '''

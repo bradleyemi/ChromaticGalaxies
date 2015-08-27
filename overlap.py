@@ -9,6 +9,8 @@ image_map = {}
 check_map = {}
 
 #Takes an index of a catalog and determines which indexes to check (returns a list).
+#This function will need to be modified for non AEGIS data. It just needs to take in an image number,
+#and spit out a list of the indices of neighboring tiles.
 def index_to_check(n):
    out = []
    if n % 3 != 2: #if a tile is not on the right side of the panel
@@ -62,28 +64,17 @@ def check_adjacent(base_catalog, all_catalogs, check_indices, tolerance = 1./180
         print nDeletedInd, "objects were deleted in this check."
         delete_items(all_catalogs[index], delete_numbers)
     return nDeleted
-     
-     
-f606w_images = []
-f = open("f606w_filenames.txt")
-for line in f.readlines():
-    f606w_images.append(line.strip())
-f.close()
 
-f606w_catalogs = []
-f = open("f606w_focus_catalogs.txt")
-for line in f.readlines():
-    f606w_catalogs.append(line.strip())
-f.close()
-
-nDeleted = 0
-s = time.time()
-for i in range(len(f606w_catalogs)):
-    e = time.time()
-    print "\n \n \nChecking catalog", i
-    print "Time elapsed is", e-s, "seconds. \n \n \n"
-    base_catalog = f606w_catalogs[i]
-    n = check_adjacent(base_catalog, f606w_catalogs, index_to_check(i))
-    nDeleted += n
+def overlap_all(catalogs):
+    nDeleted = 0
+    s = time.time()
+    for i in range(len(catalogs)):
+        e = time.time()
+        print "\n \n \nChecking catalog", i
+        print "Time elapsed is", e-s, "seconds. \n \n \n"
+        base_catalog = catalogs[i]
+        n = check_adjacent(base_catalog, catalogs, index_to_check(i))
+        nDeleted += n
+        return nDeleted
 
 

@@ -6,75 +6,11 @@ import matplotlib.pyplot as plt
 import time
 import subprocess
 
-f606w_catalog_file = open("f606w_catalogs.txt")
-f814w_catalog_file = open("f814w_catalogs.txt")
-
-test_catalog = "EGS_10134_01_acs_wfc_f606w_30mas_unrot_drz.fits.focus.cat"
-test_image = "EGS_10134_01_acs_wfc_f606w_30mas_unrot_drz.fits"
-
-###### Modify the filenames below to get TT fits files into GalSim image format. ######
-
-tt_606 = {-1 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-1.fits",
--2 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-2.fits",
--3 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-3.fits",
--4 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-4.fits",
--5 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-5.fits",
--6 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-6.fits",
--7 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-7.fits",
--8 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-8.fits",
--9 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-9.fits",
--10: "/Users/bemi/JPL/F606W_TT/TinyTim_f-10.fits",
-0  : "/Users/bemi/JPL/F606W_TT/TinyTim_f0.fits",
-1  : "/Users/bemi/JPL/F606W_TT/TinyTim_f1.fits",
-2  : "/Users/bemi/JPL/F606W_TT/TinyTim_f2.fits",
-3  : "/Users/bemi/JPL/F606W_TT/TinyTim_f3.fits",
-4  : "/Users/bemi/JPL/F606W_TT/TinyTim_f4.fits",
-5  : "/Users/bemi/JPL/F606W_TT/TinyTim_f5.fits"}
-
-tt_606_list = []
-for i in range(-10,6):
-    tt_606_list.append(tt_606[i])
-
-tt_814 = {-1 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-1.fits",
--2 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-2.fits",
--3 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-3.fits",
--4 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-4.fits",
--5 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-5.fits",
--6 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-6.fits",
--7 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-7.fits",
--8 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-8.fits",
--9 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-9.fits",
--10: "/Users/bemi/JPL/F814W_TT/TinyTim_f-10.fits",
-0  : "/Users/bemi/JPL/F814W_TT/TinyTim_f0.fits",
-1  : "/Users/bemi/JPL/F814W_TT/TinyTim_f1.fits",
-2  : "/Users/bemi/JPL/F814W_TT/TinyTim_f2.fits",
-3  : "/Users/bemi/JPL/F814W_TT/TinyTim_f3.fits",
-4  : "/Users/bemi/JPL/F814W_TT/TinyTim_f4.fits",
-5  : "/Users/bemi/JPL/F814W_TT/TinyTim_f5.fits"}
-
-tt_814_list = []
-for i in range(-10,6):
-    tt_814_list.append(tt_814[i])
-'''
-i = 0
-tt_galsim_images = []
-for image in tt_606_list:
-    print "importing image", i
-    f = pyfits.open(image)
-    image_data = f[0].data 
-    img = galsim.Image(image_data)
-    tt_galsim_images.append(img)
-    f.close()
-    i += 1
-'''
-###### End .fits to GalSim import ####
-
-
 class CatalogObject:
    x_axis_length = 7500
    y_axis_length = 7500
    
-   def __init__(self, ident, fname, fweight, filter, x, y, ra, dec, radius, mag, focus, is_star, snr):
+   def __init__(self, ident, fname, fweight, filter, x, y, ra, dec, radius, mag, focus, is_star, snr, assoc):
        self.ident = ident
        self.fname = fname
        self.fweight = fweight
@@ -88,6 +24,7 @@ class CatalogObject:
        self.focus = focus
        self.is_star = is_star
        self.snr = snr
+       self.assoc = assoc
        self.leftBound = int(self.x - self.stampL)
        self.rightBound = int(self.x + self.stampL)
        self.topBound = int(self.y + self.stampL)
@@ -104,7 +41,7 @@ class CatalogObject:
            raise ValueError("The postage stamp is outside the CCD boundary.")
        else:
            if image_data == None:
-               f = pyfits.open(fname)
+               f = pyfits.open(self.fname)
                image_data = f[0].data
                f.close()
            im = galsim.Image(image_data)
@@ -117,14 +54,8 @@ class CatalogObject:
               b = galsim.BoundsI(self.leftBound, self.rightBound+1, self.bottomBound, self.topBound)
            stamp = im.subImage(b)
            return stamp
-           
-   def get_TT_field(self):
-        if self.filter == 606:
-            tt_dict = tt_606
-        elif self.filter == 814:
-            tt_dict = tt_814
-        else:
-            raise Exception('Invalid filter')
+        
+   def get_TT_field(self, tt_dict):
         focus = int(np.round(self.focus))
         return tt_dict[focus]
         
@@ -148,16 +79,9 @@ class CatalogObject:
                 return (x,y)
         print "No star found"
     
-   def PSF(self):
-        tt_field = self.get_TT_field()
-        if self.filter == 606:
-            tt_stars = "606_stars.txt"
-        if self.filter == 814:
-            tt_stars = "/Users/bemi/JPL/F814W_TT/TinyTim_f-1.stars.dat"
-        print "Matching centroid."
-        s = time.time()
+   def PSF(self, tt_dict, tt_stars):
+        tt_field = self.get_TT_field(tt_dict)
         (self.x_tt, self.y_tt) = self.find_nearest_centroid(tt_stars)
-        print "Centroid found. Time =", time.time()-s
         self.left_tt = int(self.x_tt - self.stampL)
         self.right_tt = int(self.x_tt + self.stampL)
         self.bottom_tt = int(self.y_tt - self.stampL)
@@ -193,14 +117,18 @@ def snr_hist(catalog):
     
 #snr_hist(test_catalog)
 
-def get_postage_stamps(catalog, file, filter, out_name):
+def get_postage_stamps(catalog, file, weight, filter, out_name, out_path):
     cat = asciidata.open(catalog)
     print "Catalog opened."
     f = pyfits.open(file)
+    g = pyfits.open(weight)
     print "File opened."
     image_data = f[0].data
+    weight_data = g[0].data
     f.close()
+    g.close()
     image_hdulist = pyfits.HDUList()
+    weight_hdulist = pyfits.HDUList()
     psf_hdulist = pyfits.HDUList()
     snr_list = []
     nSets = 0
@@ -219,27 +147,34 @@ def get_postage_stamps(catalog, file, filter, out_name):
         focus = cat['FOCUS'][i]
         is_star = cat['IS_STAR'][i]
         snr = cat['SNR'][i]
+        assoc = cat['ASSOC'][i]
         snr_list.append(snr)
-        object = CatalogObject(ident, fname, fweight, filter, x, y, ra, dec, radius, mag, focus, is_star, snr)
-        if object.stampL < 500 and \
-           object.is_within_image() and \
-           object.is_star == 0 and \
-           object.snr > 20.0 and \
-           object.mag + 21.1 < 22.5:
+        if assoc == -1:
+            continue
+        if assoc is None:
+            continue
+        object = CatalogObject(ident, fname, fweight, filter, x, y, ra, dec, radius, mag, focus, is_star, snr, assoc)
+        if object.assoc != -1 and \
+           object.is_within_image():
             try:
                 img = object.postage_stamp(image_data=image_data)
+                weight = object.postage_stamp(image_data=weight_data)
                 psf = object.PSF()
             except:
                 continue
             img_data = img.array
+            wht_data = weight.array 
             psf_data = psf.array
             if len(image_hdulist) == 0 and len(psf_hdulist) == 0:
                 image_hdulist.append(pyfits.PrimaryHDU(data=img_data))
+                weight_hdulist.append(pyfits.PrimaryHDU(data=wht_data))
                 psf_hdulist.append(pyfits.PrimaryHDU(data=psf_data))
             else:
                 image_hdulist.append(pyfits.ImageHDU(data=img_data))
+                weight_hdulist.append(pyfits.ImageHDU(data=wht_data))
                 psf_hdulist.append(pyfits.ImageHDU(data=psf_data))
             del img
+            del weight
             del psf
             del object
             nTotal += 1
@@ -247,30 +182,34 @@ def get_postage_stamps(catalog, file, filter, out_name):
             print "Object skipped."
         if len(image_hdulist) == 1:
             try: 
-                 galsim.fits.writeFile(str(nSets) + ".fits", image_hdulist, dir="/Users/bemi/JPL/" + out_name)
-                 galsim.fits.writeFile(str(nSets) + ".psf.fits", psf_hdulist, dir="/Users/bemi/JPL/" + out_name)
+                 galsim.fits.writeFile(str(assoc) + ".0_" + str(ra) + "_" + str(dec) + ".processed.fits", image_hdulist, dir=out_path + out_name + "/images/")
+                 galsim.fits.writeFile(str(assoc) + ".0_" + str(ra) + "_" + str(dec) + ".wht.fits", weight_hdulist, dir=out_path + out_name + "/ivar/")
+                 galsim.fits.writeFile(str(assoc) + ".0_" + str(ra) + "_" + str(dec) + ".psf.fits", psf_hdulist, dir=out_path + out_name + "/psf/")
             except:
-                 subprocess.call(["mkdir", "/Users/bemi/JPL/" + out_name])
-                 galsim.fits.writeFile(str(nSets) + ".fits", image_hdulist, dir="/Users/bemi/JPL/" + out_name)
-                 galsim.fits.writeFile(str(nSets) + ".psf.fits", psf_hdulist, dir="/Users/bemi/JPL/" + out_name)
+                 subprocess.call(["mkdir", out_path + out_name])
+                 subprocess.call(["mkdir", out_path + out_name + "/images/"])
+                 subprocess.call(["mkdir", out_path + out_name + "/ivar/"])
+                 subprocess.call(["mkdir", out_path + out_name + "/psf/"])
+                 galsim.fits.writeFile(str(assoc) + ".0_" + str(ra) + "_" + str(dec) + ".processed.fits", image_hdulist, dir=out_path + out_name + "/images/")
+                 galsim.fits.writeFile(str(assoc) + ".0_" + str(ra) + "_" + str(dec) + ".wht.fits", weight_hdulist, dir=out_path+ out_name + "/ivar/")
+                 galsim.fits.writeFile(str(assoc) + ".0_" + str(ra) + "_" + str(dec) + ".psf.fits", psf_hdulist, dir=out_path + out_name + "/psf/")
             del image_hdulist
+            del weight_hdulist
             del psf_hdulist
             image_hdulist = pyfits.HDUList()
             psf_hdulist = pyfits.HDUList()
+            weight_hdulist = pyfits.HDUList()
             nSets += 1
     print "total objects counted", nTotal
         
-def get_postage_stamps_all(catalog_list_file, image_list_file, filter):
+def get_postage_stamps_all(catalog_list_file, image_list_file, filter, out_path, start=0):
     f = open(catalog_list_file)
     lines = f.readlines()
     g = open(image_list_file)
     image_lines = g.readlines()
     f.close()
     g.close()
-    for i in range(len(lines)):
-        get_postage_stamps(lines[i].strip(), image_lines[i].strip(), filter, str(filter) + "_" + (image_lines[i])[10:12])
-    
-
-get_postage_stamps_all("f814w_catalogs.txt", "f814w_filenames.txt", 814)
+    for i in range(start,len(lines)):
+        get_postage_stamps(lines[i].strip(), image_lines[i].strip(), (image_lines[i].strip())[:len(image_lines[i].strip())-8] + "wht.fits", filter, "stamps_" + image_lines[i].strip(), out_path)
     
                 

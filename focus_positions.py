@@ -82,47 +82,47 @@ Steps:
 
 ###### Modify the filenames below to get TT fits files into GalSim image format. ######
 
-def get_tt_files(filter):
+def get_tt_files(filter, root):
     if filter == 606:
-         focusDict = {-1 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-1.fits",
-                   -2 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-2.fits",
-                   -3 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-3.fits",
-                   -4 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-4.fits",
-                   -5 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-5.fits",
-                   -6 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-6.fits",
-                   -7 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-7.fits",
-                   -8 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-8.fits",
-                   -9 : "/Users/bemi/JPL/F606W_TT/TinyTim_f-9.fits",
-                   -10: "/Users/bemi/JPL/F606W_TT/TinyTim_f-10.fits",
-                   0  : "/Users/bemi/JPL/F606W_TT/TinyTim_f0.fits",
-                   1  : "/Users/bemi/JPL/F606W_TT/TinyTim_f1.fits",
-                   2  : "/Users/bemi/JPL/F606W_TT/TinyTim_f2.fits",
-                   3  : "/Users/bemi/JPL/F606W_TT/TinyTim_f3.fits",
-                   4  : "/Users/bemi/JPL/F606W_TT/TinyTim_f4.fits",
-                   5  : "/Users/bemi/JPL/F606W_TT/TinyTim_f5.fits"}
+         focusDict = {-1 : root + "F606W_TT/TinyTim_f-1.fits",
+                   -2 : root + "F606W_TT/TinyTim_f-2.fits",
+                   -3 : root + "F606W_TT/TinyTim_f-3.fits",
+                   -4 : root + "F606W_TT/TinyTim_f-4.fits",
+                   -5 : root + "F606W_TT/TinyTim_f-5.fits",
+                   -6 : root + "F606W_TT/TinyTim_f-6.fits",
+                   -7 : root + "F606W_TT/TinyTim_f-7.fits",
+                   -8 : root + "F606W_TT/TinyTim_f-8.fits",
+                   -9 : root + "F606W_TT/TinyTim_f-9.fits",
+                   -10: root + "F606W_TT/TinyTim_f-10.fits",
+                   0  : root + "F606W_TT/TinyTim_f0.fits",
+                   1  : root + "F606W_TT/TinyTim_f1.fits",
+                   2  : root + "F606W_TT/TinyTim_f2.fits",
+                   3  : root + "F606W_TT/TinyTim_f3.fits",
+                   4  : root + "F606W_TT/TinyTim_f4.fits",
+                   5  : root + "F606W_TT/TinyTim_f5.fits"}
                    
     elif filter == 814:
-        focusDict = {-1 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-1.fits",
-                     -2 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-2.fits",
-                     -3 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-3.fits",
-                     -4 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-4.fits",
-                     -5 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-5.fits",
-                     -6 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-6.fits",
-                     -7 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-7.fits",
-                     -8 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-8.fits",
-                     -9 : "/Users/bemi/JPL/F814W_TT/TinyTim_f-9.fits",
-                    -10: "/Users/bemi/JPL/F814W_TT/TinyTim_f-10.fits",
-                      0  : "/Users/bemi/JPL/F814W_TT/TinyTim_f0.fits",
-                      1  : "/Users/bemi/JPL/F814W_TT/TinyTim_f1.fits",
-                      2  : "/Users/bemi/JPL/F814W_TT/TinyTim_f2.fits",
-                      3  : "/Users/bemi/JPL/F814W_TT/TinyTim_f3.fits",
-                      4  : "/Users/bemi/JPL/F814W_TT/TinyTim_f4.fits",
-                      5  : "/Users/bemi/JPL/F814W_TT/TinyTim_f5.fits"}
+        focusDict = {-1 : root + "F814W_TT/TinyTim_f-1.fits",
+                     -2 : root + "F814W_TT/TinyTim_f-2.fits",
+                     -3 : root + "F814W_TT/TinyTim_f-3.fits",
+                     -4 : root + "F814W_TT/TinyTim_f-4.fits",
+                     -5 : root + "F814W_TT/TinyTim_f-5.fits",
+                     -6 : root + "F814W_TT/TinyTim_f-6.fits",
+                     -7 : root + "F814W_TT/TinyTim_f-7.fits",
+                     -8 : root + "F814W_TT/TinyTim_f-8.fits",
+                     -9 : root + "F814W_TT/TinyTim_f-9.fits",
+                    -10 : root + "F814W_TT/TinyTim_f-10.fits",
+                      0  : root + "F814W_TT/TinyTim_f0.fits",
+                      1  : root + "F814W_TT/TinyTim_f1.fits",
+                      2  : root + "F814W_TT/TinyTim_f2.fits",
+                      3  : root + "F814W_TT/TinyTim_f3.fits",
+                      4  : root + "F814W_TT/TinyTim_f4.fits",
+                      5  : root + "F814W_TT/TinyTim_f5.fits"}
     else:
         raise ValueError("No data for input filter.")
     tt_list = []
     for i in range(-10,6):
-        tt_list.append(focus_dict[i])
+        tt_list.append(focusDict[i])
     i = 0
     tt_galsim_images = []
     for image in tt_list:
@@ -135,11 +135,11 @@ def get_tt_files(filter):
         i += 1
     return tt_galsim_images
     
-def get_star_file(filter)
+def get_star_file(filter, root):
     if filter == 606:
-       return "Users/bemi/JPL/606_stars.txt"
+       return root + "F606W_TT/606_stars.txt"
     if filter == 814:
-       return "Users/bemi/JPL/F814W_TT/TinyTim_f-1.stars.dat"
+       return root + "F814W_TT/814_stars.txt"
 
 ###### End .fits to GalSim import ####
 
@@ -341,7 +341,7 @@ def getMoments(image_star_table, image, tt_galsim_images, tt_star_file, match_di
         tt_moment_lists.append(tt_moments)
     cost = np.asarray(get_cost(subImage_moments, tt_moment_lists))
     focus, focus_err = find_focus_position(np.asarray(range(-10,6)), cost, plot=plot)
-    subprocess.call(["rm", "Users/bemi/JPL/Star*.fits"])
+    subprocess.call(["rm", "-rf", "Star*.fits"])
     return focus, len(keep)
 
 def focus(catalogs, filenames, tt_galsim_images, tt_star_file, out_name, match_dist = 200., stamp_size = 6., nstars=20, plot=False, generate_new_star_files=True, histogram = True):
@@ -353,10 +353,10 @@ def focus(catalogs, filenames, tt_galsim_images, tt_star_file, out_name, match_d
             n += 1
     foci = []
     err = []
+    out = open(out_name, "w")
     for i in range(len(filenames)):
         focus, focus_nstars = getMoments(catalogs[i]+".stars", filenames[i], tt_galsim_images, tt_star_file, match_dist=match_dist, stamp_size=stamp_size, plot=plot)
         print "Focus is", focus, "using", focus_nstars, "stars for calibration."
-        out = open(out_name, "a")
         out.write(filenames[i] + " ")
         out.write(str(focus) + " ")
         out.write(str(focus_nstars) + "\n")
@@ -370,19 +370,20 @@ def focus(catalogs, filenames, tt_galsim_images, tt_star_file, out_name, match_d
         plt.title("Focus positions")
         plt.show()
 
-def label_catalogs(focus_text_file):
+def label_catalogs(focus_text_file, catalogs):
     f = open(focus_text_file)
+    n = 0
     for line in f.readlines():
          split = line.split()
          filename = split[0]
          focus = np.float32(split[1])
-         catalog = asciidata.open(filename + ".cat")
+         catalog = asciidata.open(catalogs[n])
          for i in range(catalog.nrows):
               catalog['FILENAME'][i] = filename
               catalog['FOCUS'][i] = focus
          catalog['FILENAME'].set_colcomment('Original name of image file for object')
          catalog['FOCUS'].set_colcomment('Focus position in um')
-         catalog.writeto(filename + ".focus.cat")
+         catalog.writeto((catalogs[n])[:len(catalogs[n])-4] + ".focus.cat")
+         n += 1
 
-#label_catalogs("606_focus_positions.txt")
-#label_catalogs("814_focus_positions.txt")
+
