@@ -1,0 +1,36 @@
+For the SURF project our goal was to create a basis set of galaxies from AEGIS f606w
+and f814w filters for implementation in ChromaticRealGalaxy. This document should be
+helpful to anyone who is going to continue to work on the project. It specifies what has
+already been implemented, and what still needs to be done.
+
+Done:
+
+- sextractor was used to create catalogs of objects
+- a star/galaxy selection cut was chosen
+- for each of the ACS images, identified what the focus position was, by comparing 
+stars in the image with the Tiny Tim star fields and put the focus position into the 
+catalogs from sextractor.
+- cut out postage stamps of galaxies (stamp size 4*half light radius, may need to be updated). 
+- cut out corresponding inverse weight files, and PSFs.
+- some initial sample characterization was done. 
+
+Work left to do:
+
+- generate_masks is not quite ready out of the box. Some minor tweaks need to be made
+to make it more general (no more local dependencies)
+and generate_masks can be incorporated into the main script run.py. 
+- parametric models of galaxies. IDL code works on the first 500 galaxies, but it is
+quite slow. modified_make_input (in the repo) needs to be updated to be more general, 
+but it overall provides a jumping off point for making input to Claire's code.
+-addition of photo-z's into the catalogs. 
+-better sample characterization. More plots and sanity checks of various quantities.
+there are lots that can be done. 
+-incorporation of the models into galsim. Rachel Mandelbaum has code for this.
+-assoc_catalogs only works for two filters. We want to be able to associate objects in
+catalogs in multiple filters with reasonable computational efficiency. 
+-flexibility, and incorporation of different images. we assume the images are all HST-ACS
+images in f606w and f814w filters. We need more TT fields to expand it out and we'd also 
+need to change some code if the image borders are different, examine how diffraction
+spikes behave in the other filters, etc. 
+-We ultimately want to use more infrared fields, and also deeper fields.
+

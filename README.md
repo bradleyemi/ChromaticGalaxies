@@ -25,8 +25,11 @@ GalSim (https://github.com/GalSim-developers/GalSim),
 For f606w and f814w filters: 
 
 TinyTim starfield folders. This should be downloaded and placed into your path. 
-For now you can download them off:
-<insert link here>
+For now you can download them off my Google Drive:
+https://drive.google.com/folderview?id=0B5k2MfMTwAYdfndkREhuUG9aLWN2N3pQWUdxcTdtZlh3SXgxLUMyT2FuaVZvRWlNQmFINjQ&usp=sharing
+
+They have to be unzipped before you can use them. You'll need to put in the correct
+path in run.py to these folders.
 
 
 Your data should include:
