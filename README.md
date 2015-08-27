@@ -47,12 +47,19 @@ compatible with Claire Lackner's parametric fitting code.
 Specifically it:
 
 Runs SExtractor on the data
+
 Cleans for blended objects using the hot-cold method (Leauthaud et. al. 2007)
+
 Classifies stars and galaxies
+
 Deletes objects on the noisy border
+
 Automatic detection of star diffraction spikes, removal of objects affected
+
 Checks for overlapping objects not caught by the hot-cold method
+
 Finds the PSF by estimating the focus position from TT star fields
+
 Generates postage-stamps and PSFs from simulated stars from the TT fields
 
 Usage:
