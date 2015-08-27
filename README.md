@@ -1,41 +1,68 @@
 # ChromaticGalaxies
 
-This is the code I used to generate a basis set of parametric galaxies from the AEGIS data for ChromaticRealGalaxy in Galsim (https://github.com/GalSim-developers/GalSim) for issue #551 (https://github.com/GalSim-developers/GalSim/issues/551). 
+This is the code I used to generate a basis set of parametric galaxies from the AEGIS 
+data for ChromaticRealGalaxy in Galsim (https://github.com/GalSim-developers/GalSim) for 
+issue #551 (https://github.com/GalSim-developers/GalSim/issues/551). 
 
 I can be contacted at bemi@stanford.edu to discuss the code or fix issues.
 
-Requirements:
+Software Requirements:
 
 Python 2.7
-
 Standard NumPy, SciPy distributions
-
-PyPlot (optional)
-
+PyPlot
 SExtractor (http://www.astromatic.net/software/sextractor)
-
 Astro Ascii Data (http://www.stecf.org/software/PYTHONtools/astroasciidata/)
-
 Pyfits (http://www.stsci.edu/institute/software_hardware/pyfits)
+GalSim (https://github.com/GalSim-developers/GalSim)
 
-TinyTim starfields corresponding to focus positions -10um to +5um saved as .fits files
+For f606w and f814w filters: 
 
-A single file containing the centroids of the TinyTim stars (assumed to be the same for all starfields)- text file with x, y columns
+TinyTim starfield folders. This should be downloaded and placed into your path. 
+For now you can download them off:
+<insert link here>
+
 
 Your data should include:
 
-A list of CTI-corrected, multi-drizzled HST image .fits files with a WCS, and their corresponding inverse variance files. These should have drz.fits and wht.fits extensions respectively. 
+A list of CTI-corrected, multi-drizzled HST image .fits files with a WCS, and their 
+corresponding inverse variance files. These should have drz.fits and wht.fits extensions 
+respectively. 
+The names of these filters IN ORDER should be saved in two separate text files. 
+An optional file with coordinates of manual masks. See HST_Sextractor_new.py for details.
 
-The workflow is as follows:
+Description:
 
--Generate catalogs.
+Makes a clean sample of postage stamps of galaxies and stores them in folders
+compatible with Claire Lackner's parametric fitting code. 
+Specifically it:
 
-Run HST_sextractor.py on the data, initiate one GalaxyCatalog for each image/weight file. Run make_catalog on each GalaxyCatalog to make the SExtractor catalog and save the catalog to disk. Assemble these into an instance of GalaxyCatalogList, and then run add_focus to add the focus positions to the catalogs (you will need this to get the PSFs). Then run overlap.py on all your catalog files (with WCS) to delete duplicate objects. A manual masking file is optional, and the format is described within HST_sextractor.py. 
+Runs SExtractor on the data
+Cleans for blended objects using the hot-cold method (Leauthaud et. al. 2007)
+Classifies stars and galaxies
+Deletes objects on the noisy border
+Automatic detection of star diffraction spikes, removal of objects affected
+Checks for overlapping objects not caught by the hot-cold method
+Finds the PSF by estimating the focus position from TT star fields
+Generates postage-stamps and PSFs from simulated stars from the TT fields
 
--Get postage stamps.
+Usage:
 
-Run postage_stamps.py on the list of catalogs with focus, images, and also input the filter in nm. This is accomplished by get_postage_stamps_all. You will need to change the path of the TinyTim files at the top of postage_stamps.py to correspond to where the TinyTim starfields are located, and also the path of the list of starfield centroids in the PSF function. You will also need to set the path in which the postage stamps are saved (this process will be made easier in the future). Run generate_masks to get mask files. 
+You need to have all of the files in this repository in the same directory. But all you
+need to modify is the top of the script run.py. 
 
--Get parametric fits.
+Then all you need to do is:
+python run.py
 
-Right now, we are dependent on Claire Lackner's code to get parametric models. This requires IDL and the library IDLUtils. See Claire's page for more information (https://github.com/clackner2007/bdfit_lite).
+For developers, here is the dependency tree of the modules:
+
+run.py: requires assoc_catalogs, HST_sextractor_new, overlap, and postage_stamps. 
+(will later require generate_masks, for now no masks are generated). 
+
+HST_sextractor_new.py: requires focus_positions and cleanutils. 
+
+
+
+
+
+
