@@ -8,13 +8,19 @@ I can be contacted at bemi@stanford.edu to discuss the code or fix issues.
 
 Software Requirements:
 
-Python 2.7
-Standard NumPy, SciPy distributions
-PyPlot
-SExtractor (http://www.astromatic.net/software/sextractor)
-Astro Ascii Data (http://www.stecf.org/software/PYTHONtools/astroasciidata/)
-Pyfits (http://www.stsci.edu/institute/software_hardware/pyfits)
-GalSim (https://github.com/GalSim-developers/GalSim)
+Python 2.7,
+
+Standard NumPy, SciPy distributions,
+
+PyPlot,
+
+SExtractor (http://www.astromatic.net/software/sextractor),
+
+Astro Ascii Data (http://www.stecf.org/software/PYTHONtools/astroasciidata/),
+
+Pyfits (http://www.stsci.edu/institute/software_hardware/pyfits),
+
+GalSim (https://github.com/GalSim-developers/GalSim),
 
 For f606w and f814w filters: 
 
