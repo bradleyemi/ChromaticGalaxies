@@ -2,6 +2,8 @@ import HST_Sextractor_new
 import overlap
 import assoc_catalogs
 import postage_stamps
+import gc
+import time
 
 ### Modify the filenames and paths below to point to your images, etc. ###
 ### Required inputs are described below. ##
@@ -12,9 +14,9 @@ n_filters = 2
 image_file = ["f606w_filenames.txt", "f814w_filenames.txt"] #Text file listing the names of the images, in the same order for both filters. 
 background_file = ["f606w_backgrounds.txt", "f814w_backgrounds.txt"] #Text file listing the names of the inverse weight files, in the same order for both filters.
 filter = [606, 814] #The corresponding filters. (only supports f814w and f606w, right now)
-manual_mask_file = [None, None] #A manual masking file as described in HST_Sextractor.py. 
+manual_mask_file = [None, None] #A manual masking file as described in HST_Sextractor_news.py. 
 out_name = ["f606w_example", "f814w_example"] #The outname prefixes of the intermediary catalogs, in case you want to check if each step is working.
-tt_root_dir = ["/Users/bemi/JPL/", "/Users/bemi/JPL"] #Where the TT files are stored.
+tt_root_dir = ["/Users/bemi/JPL/", "/Users/bemi/JPL/"] #Where the TT files are stored.
 tt_star_file = [tt_root_dir[0] + "F606W_TT/606_stars.txt", tt_root_dir[1] + "F814W_TT/814_stars.txt"] #The full path name of where the TT centroid lists are. (Text file, x-centroid and y-centroid are the columns)
 catalog_list_file = ["f606w_catalogs.txt", "f814w_catalogs.txt"] #The name of the text file generated listing the names of all the catalogs.
 postage_stamp_path = "/Users/bemi/" #Where the script will put the postage stamps.
@@ -45,7 +47,7 @@ def get_focus_catalogs(image_file, background_file, filter, manual_mask_file, ou
         #out_cat_name = files[i]
         out_cat_name = str(filter) + "_" + (files[i])[10:12]
         cat = HST_Sextractor_new.GalaxyCatalog(files[i], backgrounds[i], filter, out_cat_name, manual_mask_file)
-        f.write(out_cat_name[:len(out_cat_name)-4] + ".focus.cat")
+        f.write(out_cat_name + ".focus.cat" + "\n")
         cat.generate_catalog()
         catalogs.append(cat)
     
@@ -59,6 +61,8 @@ def get_focus_catalogs(image_file, background_file, filter, manual_mask_file, ou
 
 for i in range(n_filters):
     get_focus_catalogs(image_file[i], background_file[i], filter[i], manual_mask_file[i], out_name[i], tt_root_dir[i], tt_star_file[i], catalog_list_file[i])
+    gc.collect()
+    
 
 #associate catalogs
 catalogs_1 = []
