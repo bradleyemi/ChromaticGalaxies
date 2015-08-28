@@ -41,9 +41,6 @@ def make_input(path, out_name):
         names.append(name)
         ra.append(alpha)
         dec.append(delta)
-    
-    print names, ra, dec
-    
     #now, if you don't want to use the default profiles with nothing held fixed
     #you need to set the input parameters here
     #the things to set are NAMEOFPROFILE_FIX, NAMEOFPROFILE_VAL
@@ -111,7 +108,9 @@ def make_input(path, out_name):
     hdu = pyfits.new_table(cols)
     hdu.writeto(out_name, clobber=True)
 
-make_input("/Users/bemi/JPL/assoc_814_01/images", "assoc_814_01_input.fits")
-f = pyfits.open("assoc_814_01_input.fits")
-data = f[1].data
-print data
+
+f = open("data_directories.txt")
+for line in f.readlines():
+    dir = line.strip()
+    make_input("/Users/bemi/JPL/assoc_" + dir + "/images", "assoc_" + dir + "_input.fits")
+
